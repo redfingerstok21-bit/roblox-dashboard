@@ -5,26 +5,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Kunci Rahasia Keamanan
 const MY_SECRET_PASS = "AKUN_SAYA_SAJA_123";
-
 let myAccount = null;
 
 app.post('/api/update', (req, res) => {
-    const { pass, username, eggs, cash, speed, eggRate, moneyRate, equippedPets, sessionTime } = req.body;
+    const { pass, username, eggs, cash, speed, equippedPets, sessionTime } = req.body;
     
-    // Hanya menerima data jika password sesuai
     if (pass !== MY_SECRET_PASS) {
         return res.status(403).json({ error: 'Access Denied' });
     }
 
     myAccount = {
         username: username || 'Unknown',
-        eggs: eggs || 0,
-        cash: cash || 0,
-        speed: speed || 0,
-        eggRate: eggRate || 0,
-        moneyRate: moneyRate || 0,
+        eggs: eggs || '0',
+        cash: cash || '0/s',
+        speed: speed || '0',
         equippedPets: equippedPets || 'None',
         sessionTime: sessionTime || '0m',
         lastSeen: Date.now(),
@@ -35,7 +30,6 @@ app.post('/api/update', (req, res) => {
 });
 
 app.get('/api/stats', (req, res) => {
-    // Hapus data jika akun terputus lebih dari 30 detik
     if (myAccount && (Date.now() - myAccount.lastSeen > 30000)) {
         myAccount = null;
     }
@@ -62,7 +56,6 @@ app.get('/', (req, res) => {
             .stat-box { background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
             .label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; }
             .val { font-size: 1.05rem; font-weight: bold; color: #f8fafc; margin-top: 2px; }
-            .rate { color: #34d399; font-size: 0.8rem; }
             .pet-box { grid-column: span 2; background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
             .empty { text-align: center; color: #64748b; margin-top: 50px; font-size: 0.9rem; }
         </style>
@@ -94,24 +87,22 @@ app.get('/', (req, res) => {
                             <div class="grid">
                                 <div class="stat-box">
                                     <div class="label">Total Eggs</div>
-                                    <div class="val">🥚 \${acc.eggs.toLocaleString()}</div>
-                                    <div class="rate">+\${acc.eggRate}/sec</div>
+                                    <div class="val">🥚 \${acc.eggs}</div>
                                 </div>
                                 <div class="stat-box">
-                                    <div class="label">Total Cash</div>
-                                    <div class="val">💰 $\${acc.cash.toLocaleString()}</div>
-                                    <div class="rate">+\$\${acc.moneyRate}/sec</div>
+                                    <div class="label">Money / sec</div>
+                                    <div class="val">💰 \${acc.cash}</div>
                                 </div>
                                 <div class="stat-box">
                                     <div class="label">Walk Speed</div>
-                                    <div class="val">⚡ \${acc.speed} Speed</div>
+                                    <div class="val">⚡ \${acc.speed}</div>
                                 </div>
                                 <div class="stat-box">
                                     <div class="label">Farm Time</div>
                                     <div class="val">⏱️ \${acc.sessionTime}</div>
                                 </div>
                                 <div class="pet-box">
-                                    <div class="label">Equipped Pets & Boosts</div>
+                                    <div class="label">Equipped Pets</div>
                                     <div class="val" style="color:#f59e0b; font-size:0.9rem;">🐾 \${acc.equippedPets}</div>
                                 </div>
                             </div>

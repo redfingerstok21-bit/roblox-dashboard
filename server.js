@@ -6,34 +6,50 @@ app.use(cors());
 app.use(express.json());
 
 const MY_SECRET_PASS = "AKUN_SAYA_SAJA_123";
-let myAccount = null;
+
+// Menggunakan Map untuk menyimpan banyak akun tanpa batas
+const activeAccounts = new Map();
 
 app.post('/api/update', (req, res) => {
     const { pass, username, eggs, cash, speed, equippedPets, sessionTime } = req.body;
     
+    // Hanya akun yang membawa SECRET_PASS yang diterima
     if (pass !== MY_SECRET_PASS) {
         return res.status(403).json({ error: 'Access Denied' });
     }
 
-    myAccount = {
-        username: username || 'Unknown',
+    if (!username) {
+        return res.status(400).json({ error: 'Username required' });
+    }
+
+    // Simpan atau perbarui data akun berdasarkan username
+    activeAccounts.set(username, {
+        username: username,
         eggs: eggs || '0',
         cash: cash || '0/s',
         speed: speed || '0',
         equippedPets: equippedPets || 'None',
         sessionTime: sessionTime || '0m',
-        lastSeen: Date.now(),
-        lastUpdate: new Date().toLocaleTimeString('id-ID', { hour12: false })
-    };
+        lastSeen: Date.now()
+    });
 
     res.json({ success: true });
 });
 
 app.get('/api/stats', (req, res) => {
-    if (myAccount && (Date.now() - myAccount.lastSeen > 30000)) {
-        myAccount = null;
+    const now = Date.now();
+    const result = [];
+
+    // Hapus akun yang offline (tidak kirim data lebih dari 30 detik)
+    for (const [username, acc] of activeAccounts.entries()) {
+        if (now - acc.lastSeen > 30000) {
+            activeAccounts.delete(username);
+        } else {
+            result.push(acc);
+        }
     }
-    res.json(myAccount ? [myAccount] : []);
+
+    res.json(result);
 });
 
 app.get('/', (req, res) => {
@@ -43,16 +59,17 @@ app.get('/', (req, res) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Private Account Dashboard</title>
+        <title>Unlimited Multi-Account Dashboard</title>
         <style>
             body { font-family: -apple-system, sans-serif; background-color: #090d16; color: #f1f5f9; margin: 0; padding: 16px; }
-            .container { max-width: 500px; margin: 0 auto; }
+            .container { max-width: 600px; margin: 0 auto; }
             h2 { text-align: center; color: #38bdf8; font-size: 1.3rem; margin-bottom: 20px; }
+            .grid-cards { display: flex; flex-direction: column; gap: 16px; }
             .card { background: #131b2e; border-radius: 14px; padding: 18px; border: 1px solid #1e293b; }
             .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 12px; }
             .username { font-size: 1.1rem; font-weight: bold; color: #38bdf8; }
             .badge { background: #10b981; color: #022c22; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
-            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .stat-box { background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
             .label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; }
             .val { font-size: 1.05rem; font-weight: bold; color: #f8fafc; margin-top: 2px; }
@@ -62,7 +79,7 @@ app.get('/', (req, res) => {
     </head>
     <body>
         <div class="container">
-            <h2>🔒 Private Account Dashboard</h2>
+            <h2>🔒 Multi-Account Dashboard</h2>
             <div id="dashboard"><div class="empty">Menunggu Executor akun Anda...</div></div>
         </div>
         <script>
@@ -77,14 +94,13 @@ app.get('/', (req, res) => {
                         return;
                     }
 
-                    const acc = data[0];
-                    container.innerHTML = \`
+                    container.innerHTML = '<div class="grid-cards">' + data.map(acc => \`
                         <div class="card">
                             <div class="card-header">
                                 <div class="username">👤 \${acc.username}</div>
-                                <div class="badge">MY EXECUTOR</div>
+                                <div class="badge">ACTIVE EXECUTE</div>
                             </div>
-                            <div class="grid">
+                            <div class="stats-grid">
                                 <div class="stat-box">
                                     <div class="label">Total Eggs</div>
                                     <div class="val">🥚 \${acc.eggs}</div>
@@ -107,7 +123,7 @@ app.get('/', (req, res) => {
                                 </div>
                             </div>
                         </div>
-                    \`;
+                    \`).join('') + '</div>';
                 } catch (e) {}
             }
             setInterval(fetchStats, 3000);

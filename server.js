@@ -1,71 +1,107 @@
-// Function untuk konversi string Income/s (misal: "27.37B/s") ke angka agar bisa di-sort
-function parseIncomeValue(incomeStr) {
-  if (!incomeStr || typeof incomeStr !== 'string') return 0;
+'use client';
+
+// Fungsi parser tangguh untuk mengubah string Income (misal: "31.59B/s", "928.4M/s") jadi angka murni
+function getIncomeNumber(acc) {
+  // Cek apakah data income disimpan di acc.cash, acc.income, atau field lainnya
+  const rawStr = acc.cash || acc.income || "0";
+  if (typeof rawStr === 'number') return rawStr;
   
-  const match = incomeStr.match(/([\d\.]+)\s*([a-zA-Z]*)/);
+  // Ambil angka dan huruf satuan (K, M, B, T)
+  const cleanStr = String(rawStr).replace(/,/g, '');
+  const match = cleanStr.match(/([\d\.]+)\s*([a-zA-Z]*)/);
   if (!match) return 0;
+
+  const val = parseFloat(match[1]) || 0;
+  const unit = (match[2] || '').toUpperCase();
+
+  if (unit.includes('T')) return val * 1000000000000;
+  if (unit.includes('B')) return val * 1000000000;
+  if (unit.includes('M')) return val * 1000000;
+  if (unit.includes('K')) return val * 1000;
   
-  const num = parseFloat(match[1]);
-  const suffix = (match[2] || '').toUpperCase();
-  
-  if (suffix.includes('T')) return num * 1e12;
-  if (suffix.includes('B')) return num * 1e9;
-  if (suffix.includes('M')) return num * 1e6;
-  if (suffix.includes('K')) return num * 1e3;
-  
-  return num || 0;
+  return val;
 }
 
 export default function Dashboard({ accounts }) {
-  // Urutkan akun berdasarkan Income/s tertinggi ke terendah
-  const sortedAccounts = Object.values(accounts || {}).sort((a, b) => {
-    const incomeA = parseIncomeValue(a.cash);
-    const incomeB = parseIncomeValue(b.cash);
-    return incomeB - incomeA;
+  // 1. Ubah data accounts menjadi array
+  const accountArray = Array.isArray(accounts) 
+    ? accounts 
+    : Object.values(accounts || {});
+
+  // 2. URUTKAN DARI INCOME TERTINGGI KE TERENDAH
+  const sortedAccounts = [...accountArray].sort((a, b) => {
+    return getIncomeNumber(b) - getIncomeNumber(a);
   });
 
   return (
-    <div className="dashboard-container">
-      <h2>Multi-Account Dashboard</h2>
+    <div className="min-h-screen bg-[#0a0e1a] text-white p-4">
+      <h1 className="text-center text-xl font-bold mb-4 text-blue-400">
+        🔒 Multi-Account Dashboard
+      </h1>
 
-      {sortedAccounts.map((account, index) => (
-        <div key={account.username} className="account-card">
-          {/* NOMOR URUT PADA HEADER */}
-          <div className="account-header">
-            <span className="account-number">#{index + 1}</span>
-            <span className="username">{account.username}</span>
-            <span className="status-tag">{account.status || "ACTIVE EXECUTE"}</span>
-          </div>
-
-          <div className="card-body">
-            <div className="stat-box">
-              <label>BEST VALUE PET</label>
-              <div>👑 {account.bestPet || "-"}</div>
-            </div>
-
-            <div className="stat-grid">
-              <div className="stat-box">
-                <label>INCOME / S</label>
-                <div>💰 {account.cash || "0/s"}</div>
+      <div className="max-w-md mx-auto space-y-4">
+        {sortedAccounts.map((account, index) => (
+          <div 
+            key={account.username || index} 
+            className="bg-[#121829] border border-gray-800 rounded-lg p-3 shadow-lg"
+          >
+            {/* HEADER AKUN DENGAN NOMOR URUT SAJA (#1, #2, dst) */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
+                <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded font-bold">
+                  #{index + 1}
+                </span>
+                <span className="font-bold text-blue-300 text-sm">
+                  👤 {account.username}
+                </span>
               </div>
-              <div className="stat-box">
-                <label>SPEED</label>
-                <div>⚡ {account.speed || "0"}</div>
+              <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded border border-emerald-500/30 font-semibold">
+                ACTIVE EXECUTE
+              </span>
+            </div>
+
+            {/* BEST VALUE PET */}
+            <div className="bg-[#1a2238] p-2 rounded mb-2 border border-blue-900/40">
+              <span className="text-[10px] text-gray-400 block font-semibold">BEST VALUE PET</span>
+              <span className="text-yellow-400 text-xs font-bold flex items-center gap-1">
+                👑 {account.bestPet || account.best_pet || "-"}
+              </span>
+            </div>
+
+            {/* STATS: INCOME & SPEED */}
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="bg-[#161d30] p-2 rounded">
+                <span className="text-[10px] text-gray-400 block">INCOME / S</span>
+                <span className="text-yellow-300 text-xs font-bold">
+                  💰 {account.cash || account.income || "0/s"}
+                </span>
+              </div>
+              <div className="bg-[#161d30] p-2 rounded">
+                <span className="text-[10px] text-gray-400 block">SPEED</span>
+                <span className="text-yellow-300 text-xs font-bold">
+                  ⚡ {account.speed || "0"}
+                </span>
               </div>
             </div>
 
-            <div className="stat-box">
-              <label>FARM TIME</label>
-              <div>⏱️ {account.sessionTime || "0h 0m"}</div>
+            {/* FARM TIME */}
+            <div className="bg-[#161d30] p-2 rounded mb-2">
+              <span className="text-[10px] text-gray-400 block">FARM TIME</span>
+              <span className="text-white text-xs font-medium">
+                ⚪ {account.sessionTime || account.farm_time || "0h 0m"}
+              </span>
             </div>
 
-            <div className="stat-box">
-              <label>EQUIPPED PETS</label>
-              <div>🐾 {account.equippedPets || "0 Active"}</div>
+            {/* EQUIPPED PETS */}
+            <div className="bg-[#161d30] p-2 rounded">
+              <span className="text-[10px] text-gray-400 block">EQUIPPED PETS</span>
+              <span className="text-yellow-400 text-xs font-bold">
+                🐾 {account.equippedPets || account.equipped_pets || "0 Active"}
+              </span>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
-          }
+                }

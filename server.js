@@ -55,7 +55,7 @@ app.get('/', (req, res) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Unlimited Multi-Account Dashboard</title>
+        <title>Multi-Account Dashboard</title>
         <style>
             body { font-family: -apple-system, sans-serif; background-color: #090d16; color: #f1f5f9; margin: 0; padding: 16px; }
             .container { max-width: 600px; margin: 0 auto; }
@@ -106,11 +106,11 @@ app.get('/', (req, res) => {
                                     <div class="val" style="color:#a855f7;">✨ \${acc.divinePet}</div>
                                 </div>
                                 <div class="stat-box">
-                                    <div class="label">Money / sec</div>
+                                    <div class="label">Income / s</div>
                                     <div class="val">💰 \${acc.cash}</div>
                                 </div>
                                 <div class="stat-box">
-                                    <div class="label">Walk Speed</div>
+                                    <div class="label">Speed</div>
                                     <div class="val">⚡ \${acc.speed}</div>
                                 </div>
                                 <div class="stat-box">

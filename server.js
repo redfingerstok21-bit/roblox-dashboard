@@ -6,14 +6,11 @@ app.use(cors());
 app.use(express.json());
 
 const MY_SECRET_PASS = "AKUN_SAYA_SAJA_123";
-
-// Menggunakan Map untuk menyimpan banyak akun tanpa batas
 const activeAccounts = new Map();
 
 app.post('/api/update', (req, res) => {
-    const { pass, username, eggs, cash, speed, equippedPets, sessionTime } = req.body;
+    const { pass, username, bestPet, divinePet, cash, speed, equippedPets, sessionTime } = req.body;
     
-    // Hanya akun yang membawa SECRET_PASS yang diterima
     if (pass !== MY_SECRET_PASS) {
         return res.status(403).json({ error: 'Access Denied' });
     }
@@ -22,10 +19,10 @@ app.post('/api/update', (req, res) => {
         return res.status(400).json({ error: 'Username required' });
     }
 
-    // Simpan atau perbarui data akun berdasarkan username
     activeAccounts.set(username, {
         username: username,
-        eggs: eggs || '0',
+        bestPet: bestPet || '-',
+        divinePet: divinePet || '-',
         cash: cash || '0/s',
         speed: speed || '0',
         equippedPets: equippedPets || 'None',
@@ -40,7 +37,6 @@ app.get('/api/stats', (req, res) => {
     const now = Date.now();
     const result = [];
 
-    // Hapus akun yang offline (tidak kirim data lebih dari 30 detik)
     for (const [username, acc] of activeAccounts.entries()) {
         if (now - acc.lastSeen > 30000) {
             activeAccounts.delete(username);
@@ -72,7 +68,7 @@ app.get('/', (req, res) => {
             .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .stat-box { background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
             .label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; }
-            .val { font-size: 1.05rem; font-weight: bold; color: #f8fafc; margin-top: 2px; }
+            .val { font-size: 0.95rem; font-weight: bold; color: #f8fafc; margin-top: 2px; }
             .pet-box { grid-column: span 2; background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
             .empty { text-align: center; color: #64748b; margin-top: 50px; font-size: 0.9rem; }
         </style>
@@ -102,8 +98,12 @@ app.get('/', (req, res) => {
                             </div>
                             <div class="stats-grid">
                                 <div class="stat-box">
-                                    <div class="label">Total Eggs</div>
-                                    <div class="val">🥚 \${acc.eggs}</div>
+                                    <div class="label">Best Value Pet</div>
+                                    <div class="val" style="color:#38bdf8;">👑 \${acc.bestPet}</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="label">Best Divine Rarity</div>
+                                    <div class="val" style="color:#a855f7;">✨ \${acc.divinePet}</div>
                                 </div>
                                 <div class="stat-box">
                                     <div class="label">Money / sec</div>

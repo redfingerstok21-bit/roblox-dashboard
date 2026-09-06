@@ -9,7 +9,7 @@ const MY_SECRET_PASS = "AKUN_SAYA_SAJA_123";
 const activeAccounts = new Map();
 
 app.post('/api/update', (req, res) => {
-    const { pass, username, bestPet, divinePet, cash, speed, equippedPets, sessionTime } = req.body;
+    const { pass, username, bestPet, cash, speed, equippedPets, sessionTime } = req.body;
     
     if (pass !== MY_SECRET_PASS) {
         return res.status(403).json({ error: 'Access Denied' });
@@ -22,7 +22,6 @@ app.post('/api/update', (req, res) => {
     activeAccounts.set(username, {
         username: username,
         bestPet: bestPet || '-',
-        divinePet: divinePet || '-',
         cash: cash || '0/s',
         speed: speed || '0',
         equippedPets: equippedPets || 'None',
@@ -67,9 +66,9 @@ app.get('/', (req, res) => {
             .badge { background: #10b981; color: #022c22; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
             .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .stat-box { background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
+            .stat-box-full { grid-column: span 2; background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
             .label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; }
             .val { font-size: 0.95rem; font-weight: bold; color: #f8fafc; margin-top: 2px; }
-            .pet-box { grid-column: span 2; background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
             .empty { text-align: center; color: #64748b; margin-top: 50px; font-size: 0.9rem; }
         </style>
     </head>
@@ -97,13 +96,9 @@ app.get('/', (req, res) => {
                                 <div class="badge">ACTIVE EXECUTE</div>
                             </div>
                             <div class="stats-grid">
-                                <div class="stat-box">
+                                <div class="stat-box-full">
                                     <div class="label">Best Value Pet</div>
                                     <div class="val" style="color:#38bdf8;">👑 \${acc.bestPet}</div>
-                                </div>
-                                <div class="stat-box">
-                                    <div class="label">Best Divine Rarity</div>
-                                    <div class="val" style="color:#a855f7;">✨ \${acc.divinePet}</div>
                                 </div>
                                 <div class="stat-box">
                                     <div class="label">Income / s</div>
@@ -113,11 +108,11 @@ app.get('/', (req, res) => {
                                     <div class="label">Speed</div>
                                     <div class="val">⚡ \${acc.speed}</div>
                                 </div>
-                                <div class="stat-box">
+                                <div class="stat-box-full">
                                     <div class="label">Farm Time</div>
                                     <div class="val">⏱️ \${acc.sessionTime}</div>
                                 </div>
-                                <div class="pet-box">
+                                <div class="stat-box-full">
                                     <div class="label">Equipped Pets</div>
                                     <div class="val" style="color:#f59e0b; font-size:0.9rem;">🐾 \${acc.equippedPets}</div>
                                 </div>

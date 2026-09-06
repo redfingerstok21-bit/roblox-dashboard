@@ -1,133 +1,71 @@
-const express = require('express');
-const cors = require('cors');
-const app = express();
+// Function untuk konversi string Income/s (misal: "27.37B/s") ke angka agar bisa di-sort
+function parseIncomeValue(incomeStr) {
+  if (!incomeStr || typeof incomeStr !== 'string') return 0;
+  
+  const match = incomeStr.match(/([\d\.]+)\s*([a-zA-Z]*)/);
+  if (!match) return 0;
+  
+  const num = parseFloat(match[1]);
+  const suffix = (match[2] || '').toUpperCase();
+  
+  if (suffix.includes('T')) return num * 1e12;
+  if (suffix.includes('B')) return num * 1e9;
+  if (suffix.includes('M')) return num * 1e6;
+  if (suffix.includes('K')) return num * 1e3;
+  
+  return num || 0;
+}
 
-app.use(cors());
-app.use(express.json());
+export default function Dashboard({ accounts }) {
+  // Urutkan akun berdasarkan Income/s tertinggi ke terendah
+  const sortedAccounts = Object.values(accounts || {}).sort((a, b) => {
+    const incomeA = parseIncomeValue(a.cash);
+    const incomeB = parseIncomeValue(b.cash);
+    return incomeB - incomeA;
+  });
 
-const MY_SECRET_PASS = "AKUN_SAYA_SAJA_123";
-const activeAccounts = new Map();
+  return (
+    <div className="dashboard-container">
+      <h2>Multi-Account Dashboard</h2>
 
-app.post('/api/update', (req, res) => {
-    const { pass, username, bestPet, cash, speed, equippedPets, sessionTime } = req.body;
-    
-    if (pass !== MY_SECRET_PASS) {
-        return res.status(403).json({ error: 'Access Denied' });
-    }
+      {sortedAccounts.map((account, index) => (
+        <div key={account.username} className="account-card">
+          {/* NOMOR URUT PADA HEADER */}
+          <div className="account-header">
+            <span className="account-number">#{index + 1}</span>
+            <span className="username">{account.username}</span>
+            <span className="status-tag">{account.status || "ACTIVE EXECUTE"}</span>
+          </div>
 
-    if (!username) {
-        return res.status(400).json({ error: 'Username required' });
-    }
+          <div className="card-body">
+            <div className="stat-box">
+              <label>BEST VALUE PET</label>
+              <div>👑 {account.bestPet || "-"}</div>
+            </div>
 
-    activeAccounts.set(username, {
-        username: username,
-        bestPet: bestPet || '-',
-        cash: cash || '0/s',
-        speed: speed || '0',
-        equippedPets: equippedPets || 'None',
-        sessionTime: sessionTime || '0m',
-        lastSeen: Date.now()
-    });
+            <div className="stat-grid">
+              <div className="stat-box">
+                <label>INCOME / S</label>
+                <div>💰 {account.cash || "0/s"}</div>
+              </div>
+              <div className="stat-box">
+                <label>SPEED</label>
+                <div>⚡ {account.speed || "0"}</div>
+              </div>
+            </div>
 
-    res.json({ success: true });
-});
+            <div className="stat-box">
+              <label>FARM TIME</label>
+              <div>⏱️ {account.sessionTime || "0h 0m"}</div>
+            </div>
 
-app.get('/api/stats', (req, res) => {
-    const now = Date.now();
-    const result = [];
-
-    for (const [username, acc] of activeAccounts.entries()) {
-        if (now - acc.lastSeen > 30000) {
-            activeAccounts.delete(username);
-        } else {
-            result.push(acc);
-        }
-    }
-
-    res.json(result);
-});
-
-app.get('/', (req, res) => {
-    res.send(`
-    <!DOCTYPE html>
-    <html lang="id">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Multi-Account Dashboard</title>
-        <style>
-            body { font-family: -apple-system, sans-serif; background-color: #090d16; color: #f1f5f9; margin: 0; padding: 16px; }
-            .container { max-width: 600px; margin: 0 auto; }
-            h2 { text-align: center; color: #38bdf8; font-size: 1.3rem; margin-bottom: 20px; }
-            .grid-cards { display: flex; flex-direction: column; gap: 16px; }
-            .card { background: #131b2e; border-radius: 14px; padding: 18px; border: 1px solid #1e293b; }
-            .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 12px; }
-            .username { font-size: 1.1rem; font-weight: bold; color: #38bdf8; }
-            .badge { background: #10b981; color: #022c22; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
-            .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .stat-box { background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
-            .stat-box-full { grid-column: span 2; background: #090d16; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
-            .label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; }
-            .val { font-size: 0.95rem; font-weight: bold; color: #f8fafc; margin-top: 2px; }
-            .empty { text-align: center; color: #64748b; margin-top: 50px; font-size: 0.9rem; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>🔒 Multi-Account Dashboard</h2>
-            <div id="dashboard"><div class="empty">Menunggu Executor akun Anda...</div></div>
+            <div className="stat-box">
+              <label>EQUIPPED PETS</label>
+              <div>🐾 {account.equippedPets || "0 Active"}</div>
+            </div>
+          </div>
         </div>
-        <script>
-            async function fetchStats() {
-                try {
-                    const res = await fetch('/api/stats');
-                    const data = await res.json();
-                    const container = document.getElementById('dashboard');
-
-                    if (data.length === 0) {
-                        container.innerHTML = '<div class="empty">Tidak ada akun terhubung. Jalankan script di Executor Anda.</div>';
-                        return;
-                    }
-
-                    container.innerHTML = '<div class="grid-cards">' + data.map(acc => \`
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="username">👤 \${acc.username}</div>
-                                <div class="badge">ACTIVE EXECUTE</div>
-                            </div>
-                            <div class="stats-grid">
-                                <div class="stat-box-full">
-                                    <div class="label">Best Value Pet</div>
-                                    <div class="val" style="color:#38bdf8;">👑 \${acc.bestPet}</div>
-                                </div>
-                                <div class="stat-box">
-                                    <div class="label">Income / s</div>
-                                    <div class="val">💰 \${acc.cash}</div>
-                                </div>
-                                <div class="stat-box">
-                                    <div class="label">Speed</div>
-                                    <div class="val">⚡ \${acc.speed}</div>
-                                </div>
-                                <div class="stat-box-full">
-                                    <div class="label">Farm Time</div>
-                                    <div class="val">⏱️ \${acc.sessionTime}</div>
-                                </div>
-                                <div class="stat-box-full">
-                                    <div class="label">Equipped Pets</div>
-                                    <div class="val" style="color:#f59e0b; font-size:0.9rem;">🐾 \${acc.equippedPets}</div>
-                                </div>
-                            </div>
-                        </div>
-                    \`).join('') + '</div>';
-                } catch (e) {}
-            }
-            setInterval(fetchStats, 3000);
-            fetchStats();
-        </script>
-    </body>
-    </html>
-    `);
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running`));
+      ))}
+    </div>
+  );
+          }

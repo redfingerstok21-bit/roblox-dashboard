@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Farming Dashboard - Steal an Egg</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; font-size: 24px; color: #38bdf8; text-align: center; }
+        .table-container { overflow-x: auto; background-color: #1e293b; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 14px 16px; border-bottom: 1px solid #334155; }
+        th { background-color: #0f172a; color: #94a3b8; font-size: 14px; text-transform: uppercase; }
+        tr:hover { background-color: #334155; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .badge-online { background-color: #059669; color: #ecfdf5; }
+        .badge-offline { background-color: #dc2626; color: #fef2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Monitoring Farming Roblox - Steal an Egg</h1>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>User ID</th>
+                        <th>Total Eggs</th>
+                        <th>Total Cash</th>
+                        <th>Status</th>
+                        <th>Last Update</th>
+                    </tr>
+                </thead>
+                <tbody id="accountTable">
+                    <tr><td colspan="6" style="text-align: center; color: #94a3b8;">Memuat data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                const res = await fetch('/api/accounts');
+                const data = await res.json();
+                const tbody = document.getElementById('accountTable');
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94a3b8;">Belum ada akun terhubung</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.map(acc => {
+                    const isOffline = acc.status === "Offline";
+                    const badgeClass = isOffline ? "badge-offline" : "badge-online";
+                    const time = new Date(acc.lastSeen).toLocaleTimeString('id-ID');
+                    
+                    return `
+                        <tr>
+                            <td><strong>${acc.username}</strong></td>
+                            <td>${acc.accountId}</td>
+                            <td>🥚 ${acc.eggs.toLocaleString()}</td>
+                            <td>💰 $${acc.cash.toLocaleString()}</td>
+                            <td><span class="badge ${badgeClass}">${acc.status}</span></td>
+                            <td>${time}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error("Gagal mengambil data:", err);
+            }
+        }
+
+        setInterval(loadDashboard, 3000); // Update otomatis tiap 3 detik
+        loadDashboard();
+    </script>
+</body>
+</html>
